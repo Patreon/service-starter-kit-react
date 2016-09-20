@@ -1,6 +1,8 @@
-# 21echoes's Starter kit
+# Service Starter Kit: Node & React Edition
 
-Forked from erikras's starter kit. Adds JSON-API support, db integration (incl. easy migrations) and easy heroku deploys.
+Fork this repo to easily make a node-and-react-based service that can be hosted on `#{my-service}.internal.patreon.com`
+
+Forked from 21echoes's fork of erikras's starter kit. 21echoes's fork adds JSON-API support, db integration (incl. easy migrations) and easy heroku deploys.
 
 
 ## Development
@@ -13,6 +15,11 @@ Forked from erikras's starter kit. Adds JSON-API support, db integration (incl. 
 
 
 ## Deployment
+
+### Patreon Cluster
+
+WIP! Copy these changes, but customize to your service: https://github.com/Patreon/ansible/tree/beagle-single-pr (gonna need a fair amount of work, as this PR is for a python-based service)
+
 
 ### Heroku
 
