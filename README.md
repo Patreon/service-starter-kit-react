@@ -18,7 +18,7 @@ Forked from 21echoes's fork of erikras's starter kit. 21echoes's fork adds JSON-
 
 ### Patreon Cluster
 
-WIP! Copy these changes, but customize to your service: https://github.com/Patreon/ansible/tree/beagle-single-pr (gonna need a fair amount of work, as this PR is for a python-based service)
+WIP! Copy these changes, but customize to your service: https://github.com/Patreon/ansible/commit/f10b16e5cc62e3b0fad08582b3f2ce0c338b3128 (gonna need a fair amount of work, as this PR is for a python-based service)
 
 
 ### Heroku
