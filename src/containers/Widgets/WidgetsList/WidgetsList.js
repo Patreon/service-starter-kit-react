@@ -6,7 +6,7 @@ import { Link } from 'react-router';
 import values from 'lodash.values';
 import access from 'safe-access';
 import { isLoaded as isAuthLoaded, load as loadAuth } from 'redux/modules/auth';
-import * as widgetListActions from 'redux/modules/widgets/widgets-list';
+import {widgetListSuite} from 'redux/modules/widget';
 
 
 @asyncConnect([{
@@ -17,7 +17,7 @@ import * as widgetListActions from 'redux/modules/widgets/widgets-list';
         if (!isAuthLoaded(state)) {
             promises.push(dispatch(loadAuth()));
         }
-        promises.push(dispatch(widgetListActions.load()));
+        promises.push(dispatch(widgetListSuite.requestAction()));
         return Promise.all(promises);
     }
 }])
@@ -25,7 +25,7 @@ import * as widgetListActions from 'redux/modules/widgets/widgets-list';
     (state) => ({
         currentUser: state.auth.user,
         widgets: access(state, 'data.widget') ? values(state.data.widget) : [],
-        widgetsLoaded: !access(state, `widgetsList.requests.${widgetListActions.LOAD}.pending`)
+        widgetsLoaded: !widgetListSuite.selector(state).requests.pending
     }),
     {}
 )
