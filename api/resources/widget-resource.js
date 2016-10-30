@@ -10,7 +10,8 @@ const widgetSchema = {
         name: types.string().required(),
         description: types.string().allow(null),
         created_at: types.date().iso().allow(null),
-    }
+    },
+    relationships: {}
 };
 
 class WidgetSerializer extends JSONAPISerializer {

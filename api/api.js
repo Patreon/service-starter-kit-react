@@ -83,6 +83,7 @@ const bootstrapJsonApi = (expressApp, jsonAPIConfig) => {
 
     // TODO: find all ./resources/*-resource
     jsonApi.define(require('./resources/user-resource').default());
+    jsonApi.define(require('./resources/widget-resource')());
 
     require('jsonapi-server/lib/routes/index.js').register();
 };
