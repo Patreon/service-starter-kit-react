@@ -132,7 +132,7 @@
     "multireducer": "^2.0.0",
     "node-pg-migrate": "^0.0.9",
     "piping": "^0.3.0",
-    "pg": "^4.5.5",
+    "pg": "^6.1.0",
     "pretty-error": "^1.2.0",
     "react": "^15.0.2",
     "react-bootstrap": "^0.28.1",

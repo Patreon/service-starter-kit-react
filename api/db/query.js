@@ -5,8 +5,19 @@ types.setTypeParser(1114, function(stringValue) {
     return new Date(stringValue + "+0000");
 });
 require('dotenv').config();
-
-const connectionString = process.env.DATABASE_URL;
+const params = url.parse(process.env.DATABASE_URL);
+const auth = params.auth.split(':');
+const pgConfig = {
+  user: auth[0],
+  password: auth[1],
+  host: params.hostname,
+  port: params.port,
+  database: params.pathname.split('/')[1],
+  ssl: process.env.PG_SSL.toLowerCase() === 'true',
+  max: 10, // max number of clients in the pool
+  idleTimeoutMillis: 30000, // how long a client is allowed to remain idle before being closed
+};
+const pool = new pg.Pool(pgConfig);
 
 export function sanitizeInput(input) {
     if (typeof input !== 'string') {
@@ -75,7 +86,7 @@ function dirtyRows(rows) {
 }
 
 export function executeQuery(queryString, callback) {
-    pg.connect(connectionString, (connectionError, client, done) => {
+    pool.connect((connectionError, client, done) => {
         if (connectionError) {
             callback(undefined, connectionError);
         } else {
@@ -90,3 +101,13 @@ export function executeQuery(queryString, callback) {
         }
     });
 }
+
+pool.on('error', function (err, client) {
+    // if an error is encountered by a client while it sits idle in the pool
+    // the pool itself will emit an error event with both the error and
+    // the client which emitted the original error
+    // this is a rare occurrence but can happen if there is a network partition
+    // between your application and the database, the database restarts, etc.
+    // and so you might want to handle it and at least log it out
+    console.error('idle client error', err.message, err.stack, JSON.stringify(err));
+});
