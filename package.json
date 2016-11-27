@@ -116,7 +116,7 @@
     "humps": "^1.1.0",
     "invariant": "^2.2.0",
     "is-plain-object": "^2.0.1",
-    "jsonapi-server": "git://github.com/21echoes/jsonapi-server.git#curry-session",
+    "jsonapi-server": "git://github.com/21echoes/jsonapi-server.git#master",
     "less": "^2.5.3",
     "less-loader": "^2.2.1",
     "lru-memoize": "^1.0.0",
