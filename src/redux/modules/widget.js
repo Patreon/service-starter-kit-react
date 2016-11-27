@@ -1,5 +1,6 @@
 import jsonApiUrl from '../middleware/jsonapi/utilities/json-api-url';
 import createSuite from '../jsonapi-suites/create-suite';
+import access from 'safe-access';
 
 const defaultFields = ['name', 'description', 'created_at'];
 const defaultResponseFormat = {
@@ -68,3 +69,37 @@ export const widgetEditSuite = createSuite(
         };
     }
 );
+
+export const widgetDeleteSuite = createSuite(
+    'DELETE_WIDGET',
+    (widgetID) => ({
+        url: jsonApiUrl(`/widget/${widgetID}`)
+    }),
+);
+
+export const reducer = (state = null, action) => {
+    switch (action.type) {
+        case widgetDeleteSuite.actionTypes.SUCCESS:
+            const widgets = access(state, 'data.widget');
+            const deletedID = access(action, 'meta.actionKey');
+            if (!(widgets && deletedID)) {
+                return state;
+            }
+            const newWidgets = Object.keys(widgets)
+                .filter((key) => (key !== deletedID))
+                .reduce((obj, key) => {
+                    obj[key] = widgets[key];
+                    return obj;
+                }, {});
+            const newData = {
+                ...state.data,
+                widget: newWidgets
+            };
+            return {
+                ...state,
+                data: newData
+            };
+        default:
+            return state;
+    }
+};

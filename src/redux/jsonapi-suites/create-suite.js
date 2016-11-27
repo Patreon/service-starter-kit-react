@@ -110,7 +110,7 @@ const _objectWithoutProperties = (obj, keys) => {
     ```
  */
 
-export default (actionType, requestGenerator, multiRequest = true) => {
+export default (actionType, requestGenerator, multiRequest = true, addOnReducers = {}) => {
     // action
     const coreRequestAction = (...args) => {
         const allOptions = requestGenerator(...args);
@@ -133,7 +133,7 @@ export default (actionType, requestGenerator, multiRequest = true) => {
     const actionTypes = {ROOT: actionType, REQUEST, SUCCESS, FAILURE, CLEAR_REF};
 
     // reducers
-    const resourcesReducer = (state = null, action) => {
+    const mainResourcesReducer = (state = null, action) => {
         switch (action.type) {
             case SUCCESS:
                 return action.payload;
@@ -145,9 +145,27 @@ export default (actionType, requestGenerator, multiRequest = true) => {
                 return state;
         }
     };
+    let resourcesReducer = mainResourcesReducer;
+    if (addOnReducers.resources) {
+        resourcesReducer = (state = null, action) => {
+            const mainResult = mainResourcesReducer(state, action);
+            return addOnReducers.resources(mainResult, action);
+        };
+        delete addOnReducers.resources;
+    }
+    const mainRequestsReducer = multiRequest ? makeMultiRequestReducer(actionType) : makeRequestReducer(actionType);
+    let requestsReducer = mainRequestsReducer;
+    if (addOnReducers.requests) {
+        requestsReducer = (state = null, action) => {
+            const mainResult = mainRequestsReducer(state, action);
+            return addOnReducers.requests(mainResult, action);
+        };
+        delete addOnReducers.requests;
+    }
     const reducers = combineReducers({
         resources: resourcesReducer,
-        requests: multiRequest ? makeMultiRequestReducer(actionType) : makeRequestReducer(actionType),
+        requests: requestsReducer,
+        ...addOnReducers
     });
 
     // selector

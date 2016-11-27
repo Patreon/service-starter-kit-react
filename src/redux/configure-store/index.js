@@ -59,11 +59,23 @@ export default function configureStore(
         )(createStore);
     }
 
-    let combinedReducers = combineReducers(configuredReducers);
-    if (optimistic) combinedReducers = optimist(combinedReducers);
+    const customRootReducer = configuredReducers._root;
+    if (customRootReducer) {
+        delete configuredReducers._root;
+    }
+    const combinedReducers = combineReducers(configuredReducers);
+    let finalReducers = combinedReducers;
+    if (customRootReducer) {
+        finalReducers = (state = null, action) => {
+            const mainResult = combinedReducers(state, action);
+            const wrappedResult = customRootReducer(mainResult, action);
+            return wrappedResult;
+        };
+    }
+    if (optimistic) finalReducers = optimist(finalReducers);
 
     const store = finalCreateStore(
-        combinedReducers,
+        finalReducers,
         initialState
     );
 

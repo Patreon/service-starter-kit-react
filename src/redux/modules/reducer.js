@@ -11,6 +11,8 @@ import {
     widgetSearchSuite,
     widgetEditSuite,
     widgetCreateSuite,
+    widgetDeleteSuite,
+    reducer as widgetReducer,
 } from './widget';
 
 export const reducers = {
@@ -29,7 +31,10 @@ export const reducers = {
         [widgetSearchSuite.actionTypes.ROOT]: widgetSearchSuite.reducers,
         [widgetEditSuite.actionTypes.ROOT]: widgetEditSuite.reducers,
         [widgetCreateSuite.actionTypes.ROOT]: widgetCreateSuite.reducers,
+        [widgetDeleteSuite.actionTypes.ROOT]: widgetDeleteSuite.reducers,
     }),
+    // Any reducers you want applied at the root level should be combined into one reducer under the _root key
+    _root: widgetReducer
 };
 
 export const combinedReducers = combineReducers(reducers);
