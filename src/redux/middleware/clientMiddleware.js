@@ -1,3 +1,5 @@
+import { CALL_API } from 'redux-api-middleware';
+
 export default function clientMiddleware(client) {
     return ({dispatch, getState}) => {
         return next => action => {
@@ -7,6 +9,16 @@ export default function clientMiddleware(client) {
 
             const { promise, types, ...rest } = action; // eslint-disable-line no-redeclare
             if (!promise) {
+                if (action[CALL_API] && __SERVER__ && client.req && client.req.get('cookie')) {
+                    const headers = {
+                        ...action[CALL_API].headers,
+                        'Cookie': client.req.get('cookie')
+                    };
+                    action[CALL_API] = {
+                        ...action[CALL_API],
+                        headers
+                    };
+                }
                 return next(action);
             }
 
