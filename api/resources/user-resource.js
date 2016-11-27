@@ -28,23 +28,19 @@ export class UserSerializer extends JSONAPISerializer {
 
 class UserMask extends JSONAPIMask {
     static canCreate() {
-        return true;
+        return this.booleanToPromise(true);
     }
 
     static canRead(model, session) {
-        return model.id === session.userID || (session && session.isAdmin);
+        return this.booleanToPromise(model.id === session.userID || (session && session.isAdmin));
     }
 
     static canUpdate(model, session) {
-        return model.id === session.userID || (session && session.isAdmin);
+        return this.booleanToPromise(model.id === session.userID || (session && session.isAdmin));
     }
 
     static canDelete(model, session) {
-        return model.id === session.userID || (session && session.isAdmin);
-    }
-
-    static canList(session) {
-        return session && session.isAdmin;
+        return this.booleanToPromise(model.id === session.userID || (session && session.isAdmin));
     }
 }
 
@@ -55,31 +51,33 @@ class UserHandler extends JSONAPIHandler {
     mask = UserMask
 
     create(request, newResource, callback) {
-        if (!this.mask.canCreate(request.session)) {
-            callback({
-                status: '403',
-                code: 'EFORBIDDEN',
-                title: 'Create forbidden'
-            });
-            return;
-        }
-        const tableData = this._objectFromJSON(newResource, request);
-        createStoredUser(tableData.email, tableData.password)
-            .then((result) => {
-                this._objectToJSON(result, (error, formattedResult) => {
-                    const email = formattedResult.email;
-                    const password = tableData.password;
-                    createStoredSession(request.session, email, password)
-                        .then(() => {
-                            callback(null, formattedResult);
-                        })
-                        .catch((sessionError) => {
-                            callback(sessionError, null);
-                        });
-                }, {request});
+        this.mask.canCreate(request.session)
+            .then(() => {
+                const tableData = this._objectFromJSON(newResource, request);
+                createStoredUser(tableData.email, tableData.password)
+                    .then((result) => {
+                        this._objectToJSON(result, (error, formattedResult) => {
+                            const email = formattedResult.email;
+                            const password = tableData.password;
+                            createStoredSession(request.session, email, password)
+                                .then(() => {
+                                    callback(null, formattedResult);
+                                })
+                                .catch((sessionError) => {
+                                    callback(sessionError, null);
+                                });
+                        }, {request});
+                    })
+                    .catch((error) => {
+                        callback(error, null);
+                    });
             })
-            .catch((error) => {
-                callback(error, null);
+            .catch(() => {
+                callback({
+                    status: '403',
+                    code: 'EFORBIDDEN',
+                    title: 'Create forbidden'
+                });
             });
     }
 }
