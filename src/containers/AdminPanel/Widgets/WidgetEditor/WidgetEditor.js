@@ -47,9 +47,11 @@ import access from 'safe-access';
 }])
 @connect(
     (state) => {
-        const widgetRef = widgetLoadSuite.selector(state);
+        const editWidgetRef = widgetLoadSuite.selector(state);
+        const createWidgetRef = widgetCreateSuite.selector(state);
         return {
-            widget: widgetRef.resources ? widgetRef.resources[0] : null,
+            widget: editWidgetRef.resources ? editWidgetRef.resources[0] : null,
+            createdWidget: createWidgetRef.resources ? createWidgetRef.resources[0] : null,
             // multiselectRelationSearchResults: multiselectRelationSearchResultsSelector(state),
         };
     },
@@ -66,10 +68,17 @@ export default class WidgetEditor extends Component {
         createWidget: PropTypes.func.isRequired,
         saveWidget: PropTypes.func.isRequired,
         deleteWidget: PropTypes.func.isRequired,
+        createdWidget: PropTypes.object,
         pushState: PropTypes.func.isRequired,
 
         // multiselectRelationSearchResults: PropTypes.array,
         // search: PropTypes.func.isRequired,
+    }
+
+    componentWillReceiveProps(nextProps) {
+        if (!this.props.createdWidget && nextProps.createdWidget) {
+            this.props.pushState(`/widgets/${nextProps.createdWidget.id}`);
+        }
     }
 
     handleSubmit = (event) => {
@@ -81,7 +90,10 @@ export default class WidgetEditor extends Component {
         //     id: multiselectRelation.id
         // }));
         if (this.props.widget) {
-            this.props.saveWidget(this.props.widget.id, name, descriptionHTML, /* selectedMultiselectRelationsAsRefs */);
+            this.props.saveWidget(this.props.widget.id, name, descriptionHTML, /* selectedMultiselectRelationsAsRefs */)
+                .then(() => {
+                    this.props.pushState(`/widgets/${this.props.widget.id}`);
+                });
         } else {
             this.props.createWidget(name, descriptionHTML, /* selectedMultiselectRelationsAsRefs */);
         }
