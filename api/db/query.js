@@ -1,4 +1,9 @@
 import pg from 'pg';
+import url from 'url';
+var types = pg.types;
+types.setTypeParser(1114, function(stringValue) {
+    return new Date(stringValue + "+0000");
+});
 require('dotenv').config();
 
 const connectionString = process.env.DATABASE_URL;
@@ -18,6 +23,23 @@ export function sanitizeInput(input) {
 
     const result = input.replace(regex, escaper);
     return result;
+}
+
+export function javascriptValueToSQLString(value) {
+    if (typeof value === 'string') {
+        return "'" + value + "'";
+    } else if (value instanceof Date) {
+        return "'" + value.toISOString() + "'";
+    } else if (typeof value === 'undefined') {
+        return 'NULL';
+    } else if (value === null) {
+        return 'NULL';
+    }
+    return value;
+}
+
+export function sanitizeAndSQLize(javascriptValue) {
+    return javascriptValueToSQLString(sanitizeInput(javascriptValue));
 }
 
 function dirtyOutput(output) {

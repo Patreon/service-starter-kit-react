@@ -7,12 +7,13 @@ export function get(widgetID) {
 }
 
 export function create(name, description) {
-    // TODO: created_at
+    const created_at = new Date();
     return dbm.create(
         TABLE_NAME,
         {
             name,
             description,
+            created_at,
         }
     );
 }

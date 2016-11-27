@@ -21,13 +21,14 @@ export function create(email, password) {
             .catch(() => {
                 const salt = bcrypt.genSaltSync(10);
                 const hashedPassword = bcrypt.hashSync(password, salt);
-                // TODO: created_at
+                const created_at = new Date();
                 dbm.create(
                     'users',
                     {
-                        email: email,
+                        email,
                         password: hashedPassword,
-                        salt: salt
+                        salt,
+                        created_at
                     },
                     true
                 )

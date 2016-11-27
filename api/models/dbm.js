@@ -1,5 +1,5 @@
 import formatString from '../utils/string-format';
-import {sanitizeInput, executeQuery} from '../db/query';
+import {sanitizeInput, sanitizeAndSQLize, executeQuery} from '../db/query';
 
 export function findBy(table, column, value) {
     return new Promise((resolve, reject) => {
@@ -46,16 +46,7 @@ export function get(table, id, idColumn = 'id') {
 export function create(table, columnValues) {
     // ES6 standard promises that these are in the same order
     const columns = Object.keys(columnValues);
-    let values = Object.values(columnValues);
-    values = values.map((value) => sanitizeInput(value));
-    values = values.map((value) => {
-        if (typeof value === 'string') {
-            return "'" + value + "'";
-        } else if (typeof value === 'undefined') {
-            return 'NULL';
-        }
-        return value;
-    });
+    let values = Object.values(columnValues).map((value) => sanitizeAndSQLize(value));
     const columnsString = columns.join();
     const valuesString = values.join();
 
@@ -81,15 +72,7 @@ export function update(table, id, columnValues, {idColumn} = {idColumn: 'id'}) {
     // ES6 standard promises that these are in the same order
     const columns = Object.keys(columnValues);
     let values = Object.values(columnValues);
-    values = values.map((value) => sanitizeInput(value));
-    values = values.map((value) => {
-        if (typeof value === 'string') {
-            return "'" + value + "'";
-        } else if (typeof value === 'undefined') {
-            return 'NULL';
-        }
-        return value;
-    });
+    values = values.map((value) => sanitizeAndSQLize(value));
     const columnsString = columns.join();
     const valuesString = values.join();
 
