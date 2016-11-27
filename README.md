@@ -8,8 +8,15 @@ Forked from erikras's starter kit. Adds JSON-API support, db integration (incl. 
 1. make sure node and npm are installed
 1. `npm install`
 1. make sure postgres is installed
+1. rename the db in `db-init.sql` and `.env` (find/replace `my_react_starter_kit`)
 1. `psql postgres < db-init.sql >/dev/null`
 1. `./migrate_local.sh`
+
+Now you can start developing!
+1. `npm run dev`
+1. visit `localhost:3000`
+
+As you change code, the server will auto-reboot and/or auto-hot-reload (swaps out React components without needing a browser refresh)
 
 
 ## Deployment
