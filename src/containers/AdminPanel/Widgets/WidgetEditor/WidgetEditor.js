@@ -84,7 +84,8 @@ export default class WidgetEditor extends Component {
     handleSubmit = (event) => {
         event.preventDefault();
         const name = this.refs.nameField.value;
-        const descriptionHTML = this.refs.descriptionEditor.state.value.toString('html');
+        const descriptionHTML = this.refs.descriptionEditor.state.value ?
+        this.refs.descriptionEditor.state.value.toString('html') : undefined;
         // const selectedMultiselectRelationsAsRefs = this.refs.multiSelectWithSearch.state.selectedValues.map((multiselectRelation) => ({
         //     type: multiselectRelation.type,
         //     id: multiselectRelation.id
