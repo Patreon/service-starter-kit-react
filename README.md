@@ -41,4 +41,5 @@ WIP! Copy these changes, but customize to your service: https://github.com/Patre
     1. NODE_ENV: production
     1. DATABASE_URL: (should already be set)
     1. REDIS_URL: (should already be set)
-1. Update `src/config.js`
+1. Update `src/config.js` to have the proper `production.api.host` (where it currently says "your-url.herokuapp.com")
+1. `./migrate_remote.sh`
