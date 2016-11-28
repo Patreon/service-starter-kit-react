@@ -67,38 +67,39 @@ export default class PostgresStore {
     Search for a list of resources, given a resource type.
     */
     search(request, callback) {
-        if (!this.mask.canList(request.session)) {
-            callback({
-                status: '403',
-                code: 'EFORBIDDEN',
-                title: 'List forbidden'
-            });
-            return;
-        }
-
-        dbm.list(this._tableName(request), this._paginationParams(request))
-            .then((results) => {
-                const formatPromises = results.map((result) => (
-                    new Promise((resolve, reject) => {
-                        this._objectToJSON(result, (error, formattedResult) => {
-                            if (error) {
-                                reject(error);
-                            } else {
-                                resolve(formattedResult);
-                            }
-                        }, {request});
-                    })
-                ));
-                Promise.all(formatPromises)
-                    .then((formattedResults) => {
-                        callback(null, formattedResults, formattedResults.length);
+        this.mask.canList(request.session)
+            .then(() => {
+                dbm.list(this._tableName(request), this._paginationParams(request))
+                    .then((results) => {
+                        const formatPromises = results.map((result) => {
+                            return new Promise((resolve, reject) => {
+                                this._objectToJSON(result, (error, formattedResult) => {
+                                    if (error) {
+                                        reject(error);
+                                    } else {
+                                        resolve(formattedResult);
+                                    }
+                                }, {request});
+                            })
+                        });
+                        Promise.all(formatPromises)
+                            .then((formattedResults) => {
+                                callback(null, formattedResults, formattedResults.length);
+                            })
+                            .catch((error) => {
+                                callback(error, null);
+                            });
                     })
                     .catch((error) => {
                         callback(error, null);
                     });
             })
-            .catch((error) => {
-                callback(error, null);
+            .catch(() => {
+                callback({
+                    status: '403',
+                    code: 'EFORBIDDEN',
+                    title: 'List forbidden'
+                });
             });
     }
 
@@ -108,15 +109,17 @@ export default class PostgresStore {
     find(request, callback) {
         dbm.get(this._tableName(request), request.params.id)
             .then((result) => {
-                if (!this.mask.canRead(result, request.session)) {
-                    callback({
-                        status: '403',
-                        code: 'EFORBIDDEN',
-                        title: 'Read forbidden'
+                this.mask.canRead(result, request.session)
+                    .then(() => {
+                        this._objectToJSON(result, callback, {request});
+                    })
+                    .catch(() => {
+                        callback({
+                            status: '403',
+                            code: 'EFORBIDDEN',
+                            title: 'Read forbidden'
+                        });
                     });
-                    return;
-                }
-                this._objectToJSON(result, callback, {request});
             })
             .catch((error) => {
                 callback(error, null);
@@ -127,21 +130,23 @@ export default class PostgresStore {
     Create (store) a new resource give a resource type and an object.
     */
     create(request, newResource, callback) {
-        if (!this.mask.canCreate(request.session)) {
-            callback({
-                status: '403',
-                code: 'EFORBIDDEN',
-                title: 'Create forbidden'
-            });
-            return;
-        }
-        const tableData = this._objectFromJSON(newResource, request);
-        dbm.create(this._tableName(request), tableData)
-            .then((result) => {
-                this._objectToJSON(result, callback, {request});
+        this.mask.canCreate(request.session)
+            .then(() => {
+                const tableData = this._objectFromJSON(newResource, request);
+                dbm.create(this._tableName(request), tableData)
+                    .then((result) => {
+                        this._objectToJSON(result, callback, {request});
+                    })
+                    .catch((error) => {
+                        callback(error, null);
+                    });
             })
-            .catch((error) => {
-                callback(error, null);
+            .catch(() => {
+                callback({
+                    status: '403',
+                    code: 'EFORBIDDEN',
+                    title: 'Create forbidden'
+                });
             });
     }
 
@@ -151,20 +156,22 @@ export default class PostgresStore {
     delete(request, callback) {
         dbm.get(this._tableName(request), request.params.id)
             .then((result) => {
-                if (!this.mask.canDelete(result, request.session)) {
-                    callback({
-                        status: '403',
-                        code: 'EFORBIDDEN',
-                        title: 'Delete forbidden'
-                    });
-                    return;
-                }
-                dbm.deleteRow(this._tableName(request), request.params.id)
+                this.mask.canDelete(result, request.session)
                     .then(() => {
-                        callback();
+                        dbm.deleteRow(this._tableName(request), request.params.id)
+                            .then(() => {
+                                callback();
+                            })
+                            .catch((error) => {
+                                callback(error, null);
+                            });
                     })
-                    .catch((error) => {
-                        callback(error, null);
+                    .catch(() => {
+                        callback({
+                            status: '403',
+                            code: 'EFORBIDDEN',
+                            title: 'Delete forbidden'
+                        });
                     });
             })
             .catch((error) => {
@@ -179,22 +186,24 @@ export default class PostgresStore {
     update(request, partialResource, callback) {
         dbm.get(this._tableName(request), request.params.id)
             .then((getResult) => {
-                if (!this.mask.canUpdate(getResult, request.session)) {
-                    callback({
-                        status: '403',
-                        code: 'EFORBIDDEN',
-                        title: 'Update forbidden'
-                    });
-                    return;
-                }
-                const tableData = this._objectFromJSON(partialResource);
-                dbm.update(this._tableName(request), request.params.id, tableData)
-                    .then((result) => {
-                        this._objectToJSON(result, callback, {request});
+                this.mask.canUpdate(getResult, request.session)
+                    .then(() => {
+                        const tableData = this._objectFromJSON(partialResource);
+                        dbm.update(this._tableName(request), request.params.id, tableData)
+                            .then((result) => {
+                                this._objectToJSON(result, callback, {request});
+                            })
+                            .catch((error) => {
+                                callback(error, null);
+                            });
                     })
-                    .catch((error) => {
-                        callback(error, null);
-                    });
+                    .catch(() => {
+                        callback({
+                            status: '403',
+                            code: 'EFORBIDDEN',
+                            title: 'Update forbidden'
+                        });
+                    })
             })
             .catch((error) => {
                 callback(error, null);

@@ -1,21 +1,32 @@
 export default class JSONAPIMask {
+    static booleanToPromise(boolean) {
+        return new Promise((resolve, reject) => {
+            if (boolean) {
+                resolve();
+            } else {
+                reject();
+            }
+        });
+    }
+
     static canCreate() {
-        return false;
+        return this.booleanToPromise(false);
     }
 
     static canRead() {
-        return false;
+        return this.booleanToPromise(false);
     }
 
     static canUpdate() {
-        return false;
+        return this.booleanToPromise(false);
     }
 
     static canDelete() {
-        return false;
+        return this.booleanToPromise(false);
     }
 
     static canList() {
-        return false;
+        // sadly, jsonapi-server uses listing to look up relationships...
+        return this.booleanToPromise(true);
     }
 }

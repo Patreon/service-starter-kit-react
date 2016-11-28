@@ -5,8 +5,8 @@ import {Grid, Row, Col} from 'react-bootstrap';
 import { asyncConnect } from 'redux-async-connect';
 import Helmet from 'react-helmet';
 import { isLoaded as isAuthLoaded, load as loadAuth } from 'redux/modules/auth';
-import * as widgetActions from 'redux/modules/widgets/widget';
 import access from 'safe-access';
+import {widgetLoadSuite} from 'redux/modules/widget';
 
 @asyncConnect([{
     promise: ({store: {dispatch, getState}, params}) => {
@@ -16,25 +16,27 @@ import access from 'safe-access';
         if (!isAuthLoaded(state)) {
             promises.push(dispatch(loadAuth()));
         }
-        const widgetID = params.widgetID;
-        if (access(state, 'widget.widgetRef.id')
-        && access(state, 'widget.widgetRef.id').toString() !== params.widgetID) {
-            promises.push(dispatch(widgetActions.clearFocus()));
+        const widgetRef = widgetLoadSuite.selector(state);
+        const loadedWidgetID = access(widgetRef, 'resources[0].id');
+        if (loadedWidgetID && params.widgetID && (loadedWidgetID.toString() !== params.widgetID.toString())) {
+            promises.push(dispatch(widgetLoadSuite.clearAction()));
         }
-        if (widgetID) {
-            promises.push(dispatch(widgetActions.load(widgetID)));
+        if (params.widgetID) {
+            promises.push(dispatch(widgetLoadSuite.requestAction(params.widgetID)));
         }
 
         return Promise.all(promises);
     }
 }])
 @connect(
-    (state, ownProps) => ({
-        currentUser: state.auth.user,
-        widget: access(state, 'data.widget') && access(state, 'widget.widgetRef.id') ? state.data.widget[state.widget.widgetRef.id] : undefined,
-        widgetLoaded: !access(state, `widget.requests.${widgetActions.LOAD}.${ownProps.params.widgetID}.pending`)
-    }),
-    widgetActions
+    (state, ownProps) => {
+        const widgetRef = widgetLoadSuite.selector(state);
+        return {
+            currentUser: state.auth.user,
+            widget: widgetRef.resources ? widgetRef.resources[0] : null,
+            widgetLoaded: !access(widgetRef.requests, `${ownProps.params.widgetID}.pending`)
+        };
+    }
 )
 export default class WidgetPage extends Component {
     static propTypes = {
@@ -47,7 +49,26 @@ export default class WidgetPage extends Component {
     }
 
     render() {
-        return this.props.widgetLoaded ? (
+        if (!this.props.widgetLoaded) {
+            return (
+                <div className="container">
+                    <Helmet title="Widget"/>
+                    <h1>Widget</h1>
+
+                    <p>Loading widget...</p>
+                </div>
+            );
+        } else if (!this.props.widget) {
+            return (
+                <div className="container">
+                    <Helmet title="Widget"/>
+                    <h1>Widget: Error</h1>
+
+                    <p>Widget not found!</p>
+                </div>
+            );
+        }
+        return (
             <div className="container">
                 <Helmet title={this.props.widget.name + ' Widget'} />
 
@@ -66,13 +87,6 @@ export default class WidgetPage extends Component {
                     </Row>
                     <p dangerouslySetInnerHTML={{__html: this.props.widget.description}} />
                 </Grid>
-            </div>
-        ) : (
-            <div className="container">
-                <Helmet title="Widget"/>
-                <h1>Widget</h1>
-
-                <p>Loading widget...</p>
             </div>
         );
     }

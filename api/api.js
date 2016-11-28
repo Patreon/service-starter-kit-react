@@ -83,27 +83,18 @@ const bootstrapJsonApi = (expressApp, jsonAPIConfig) => {
 
     // TODO: find all ./resources/*-resource
     jsonApi.define(require('./resources/user-resource').default());
+    jsonApi.define(require('./resources/widget-resource')());
 
-    require('jsonapi-server/lib/routes/index.js').register();
+    jsonApi.start();
 };
 
-// this setup's routing of :3000/api => :3030/ confuses jsonapi-server
-// we tried setting it up with port 3030 directly, but that caused cookies to :(
-// so instead we have /api appended to the url constructor *without* being a base
-let prefixHackedHostname = config.api.host;
-let prefixHackedPort = config.api.port;
-if (config.api.prefix) {
-    if (config.api.port) {
-        prefixHackedPort += config.api.prefix;
-    } else {
-        prefixHackedHostname += config.api.prefix;
-    }
-}
 const jsonAPIConfig = {
     protocol: config.api.protocol,
-    hostname: prefixHackedHostname,
-    port: prefixHackedPort,
+    hostname: config.api.host,
+    port: 3030,
     base: '/',
+    router: app,
+    graphiql: false
 };
 bootstrapJsonApi(app, jsonAPIConfig);
 

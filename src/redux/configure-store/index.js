@@ -17,8 +17,7 @@ const defaultOptions = {
 
 export const baseMiddleware = [
     // csrfTicketMiddleware,
-    thunkMiddleware,
-    apiMiddleware
+    thunkMiddleware
 ];
 
 export default function configureStore(
@@ -35,13 +34,13 @@ export default function configureStore(
     let configuredReducers = reducers;
     let middleware = [...baseMiddleware];
 
+    if (extraMiddleware) middleware = [ ...middleware, ...extraMiddleware, apiMiddleware ];
+
     if (data) {
         const jsonApiConfig = configureJsonApi();
         middleware = [ ...middleware, ...jsonApiConfig.middleware ];
         configuredReducers = { ...configuredReducers, data: jsonApiConfig.reducer };
     }
-
-    if (extraMiddleware) middleware = [ ...middleware, ...extraMiddleware ];
 
     let finalCreateStore;
     if (__DEVELOPMENT__ && __CLIENT__ && __DEVTOOLS__) {
@@ -59,11 +58,23 @@ export default function configureStore(
         )(createStore);
     }
 
-    let combinedReducers = combineReducers(configuredReducers);
-    if (optimistic) combinedReducers = optimist(combinedReducers);
+    const customRootReducer = configuredReducers._root;
+    if (customRootReducer) {
+        delete configuredReducers._root;
+    }
+    const combinedReducers = combineReducers(configuredReducers);
+    let finalReducers = combinedReducers;
+    if (customRootReducer) {
+        finalReducers = (state = null, action) => {
+            const mainResult = combinedReducers(state, action);
+            const wrappedResult = customRootReducer(mainResult, action);
+            return wrappedResult;
+        };
+    }
+    if (optimistic) finalReducers = optimist(finalReducers);
 
     const store = finalCreateStore(
-        combinedReducers,
+        finalReducers,
         initialState
     );
 

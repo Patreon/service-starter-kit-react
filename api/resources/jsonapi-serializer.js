@@ -51,6 +51,9 @@ export default class JSONAPISerializer {
     }
 
     static relationshipsForObject(object) {
+        if (!this.schema().relationships) {
+            return {};
+        }
         const relationshipKeys = Object.keys(this.schema().relationships).filter((relationshipKey) => (
             this.shouldIncludeRelationship(relationshipKey)
         ));

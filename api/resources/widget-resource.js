@@ -10,7 +10,8 @@ const widgetSchema = {
         name: types.string().required(),
         description: types.string().allow(null),
         created_at: types.date().iso().allow(null),
-    }
+    },
+    relationships: {}
 };
 
 class WidgetSerializer extends JSONAPISerializer {
@@ -21,23 +22,19 @@ class WidgetSerializer extends JSONAPISerializer {
 
 class WidgetMask extends JSONAPIMask {
     static canCreate(session) {
-        return session && session.isAdmin;
+        return this.booleanToPromise(session && session.isAdmin);
     }
 
     static canRead() {
-        return true;
+        return this.booleanToPromise(true);
     }
 
     static canUpdate(model, session) {
-        return session && session.isAdmin;
+        return this.booleanToPromise(session && session.isAdmin);
     }
 
     static canDelete(model, session) {
-        return session && session.isAdmin;
-    }
-
-    static canList() {
-        return true;
+        return this.booleanToPromise(session && session.isAdmin);
     }
 }
 
