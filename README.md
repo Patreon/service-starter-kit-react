@@ -13,6 +13,7 @@ Forked from erikras's starter kit. Adds JSON-API support, db integration (incl. 
 1. `./migrate_local.sh`
 
 Now you can start developing!
+
 1. `npm run dev`
 1. visit `localhost:3000`
 
