@@ -33,6 +33,7 @@ export default class ApiClient {
 
             request.end((err, { body } = {}) => err ? reject(body || err) : resolve(body));
         }));
+        this.req = req;
     }
     /*
     * There's a V8 bug where, when using Babel, exporting classes with only

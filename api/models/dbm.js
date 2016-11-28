@@ -1,5 +1,6 @@
 import formatString from '../utils/string-format';
-import {sanitizeInput, executeQuery} from '../db/query';
+import {sanitizeInput, sanitizeAndSQLize, executeQuery} from '../db/query';
+import zip from 'lodash.zip';
 
 export function findBy(table, column, value) {
     return new Promise((resolve, reject) => {
@@ -44,28 +45,32 @@ export function get(table, id, idColumn = 'id') {
 }
 
 export function create(table, columnValues) {
+    return multicreate(table, Object.keys(columnValues).reduce((memo, column) => {
+        memo[column] = [columnValues[column]];
+        return memo;
+    }, {}));
+}
+
+export function multicreate(table, columnToValueArrays) {
     // ES6 standard promises that these are in the same order
-    const columns = Object.keys(columnValues);
-    let values = Object.values(columnValues);
-    values = values.map((value) => sanitizeInput(value));
-    values = values.map((value) => {
-        if (typeof value === 'string') {
-            return "'" + value + "'";
-        } else if (typeof value === 'undefined') {
-            return 'NULL';
-        }
-        return value;
-    });
+    const columns = Object.keys(columnToValueArrays);
+    const valueArrays = Object.values(columnToValueArrays);
+    const zippedValueArrays = zip(...valueArrays);
+    const valueStrings = zippedValueArrays.map((valueArray) => {
+        const values = valueArray.map((value) => sanitizeAndSQLize(value));
+        return '(' + values.join() + ')';
+    })
     const columnsString = columns.join();
-    const valuesString = values.join();
+    const allValuesString = valueStrings.join();
+    const queryString = formatString('insert into {0} ({1}) values {2} returning *',
+        table,
+        columnsString,
+        allValuesString
+    );
 
     return new Promise((resolve, reject) => {
         executeQuery(
-            formatString('insert into {0} ({1}) values ({2}) returning *',
-                table,
-                columnsString,
-                valuesString
-            ),
+            queryString,
             (results, error) => {
                 if (error) {
                     reject(error);
@@ -81,15 +86,7 @@ export function update(table, id, columnValues, {idColumn} = {idColumn: 'id'}) {
     // ES6 standard promises that these are in the same order
     const columns = Object.keys(columnValues);
     let values = Object.values(columnValues);
-    values = values.map((value) => sanitizeInput(value));
-    values = values.map((value) => {
-        if (typeof value === 'string') {
-            return "'" + value + "'";
-        } else if (typeof value === 'undefined') {
-            return 'NULL';
-        }
-        return value;
-    });
+    values = values.map((value) => sanitizeAndSQLize(value));
     const columnsString = columns.join();
     const valuesString = values.join();
 

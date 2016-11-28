@@ -49,7 +49,26 @@ export default class WidgetPage extends Component {
     }
 
     render() {
-        return this.props.widgetLoaded ? (
+        if (!this.props.widgetLoaded) {
+            return (
+                <div className="container">
+                    <Helmet title="Widget"/>
+                    <h1>Widget</h1>
+
+                    <p>Loading widget...</p>
+                </div>
+            );
+        } else if (!this.props.widget) {
+            return (
+                <div className="container">
+                    <Helmet title="Widget"/>
+                    <h1>Widget: Error</h1>
+
+                    <p>Widget not found!</p>
+                </div>
+            );
+        }
+        return (
             <div className="container">
                 <Helmet title={this.props.widget.name + ' Widget'} />
 
@@ -68,13 +87,6 @@ export default class WidgetPage extends Component {
                     </Row>
                     <p dangerouslySetInnerHTML={{__html: this.props.widget.description}} />
                 </Grid>
-            </div>
-        ) : (
-            <div className="container">
-                <Helmet title="Widget"/>
-                <h1>Widget</h1>
-
-                <p>Loading widget...</p>
             </div>
         );
     }
