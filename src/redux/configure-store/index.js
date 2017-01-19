@@ -7,12 +7,12 @@ import { apiMiddleware } from 'redux-api-middleware';
 import isPlainObject from 'is-plain-object';
 
 // import csrfTicketMiddleware from 'shared/middleware/csrf-ticket';
-import configureJsonApi from './configure-json-api';
+import configureNion from 'libs/nion/configure';
 
 const defaultOptions = {
     responsive: true,
-    data: true,
-    optimistic: false
+    optimistic: false,
+    nion: true
 };
 
 export const baseMiddleware = [
@@ -22,7 +22,7 @@ export const baseMiddleware = [
 
 export default function configureStore(
     reducers,
-    { responsive, data, optimistic } = defaultOptions,
+    { responsive, data, optimistic, nion } = defaultOptions,
     extraMiddleware = null,
     initialState = {}
 ) {
@@ -34,13 +34,12 @@ export default function configureStore(
     let configuredReducers = reducers;
     let middleware = [...baseMiddleware];
 
-    if (extraMiddleware) middleware = [ ...middleware, ...extraMiddleware, apiMiddleware ];
-
-    if (data) {
-        const jsonApiConfig = configureJsonApi();
-        middleware = [ ...middleware, ...jsonApiConfig.middleware ];
-        configuredReducers = { ...configuredReducers, data: jsonApiConfig.reducer };
+    if (nion) {
+        const nionConfig = configureNion();
+        configuredReducers = { ...configuredReducers, nion: nionConfig.reducer };
     }
+
+    if (extraMiddleware) middleware = [ ...middleware, ...extraMiddleware, apiMiddleware ];
 
     let finalCreateStore;
     if (__DEVELOPMENT__ && __CLIENT__ && __DEVTOOLS__) {

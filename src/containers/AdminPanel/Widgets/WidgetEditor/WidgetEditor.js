@@ -3,16 +3,19 @@ import {connect} from 'react-redux';
 import { push } from 'react-router-redux';
 import { asyncConnect } from 'redux-async-connect';
 import Helmet from 'react-helmet';
+import { selectData, selectRequest } from 'libs/nion';
 import {ContentDescriptionEditor, /* MultiSelectWithSearch */} from 'components';
+import { isLoaded as isAuthLoaded, load as loadAuth } from 'redux/modules/auth';
 import {
-    widgetLoadSuite,
-    widgetCreateSuite,
-    widgetEditSuite,
-    widgetDeleteSuite,
+    widgetLoadAction,
+    widgetCreateAction,
+    widgetEditAction,
+    widgetDeleteAction,
 } from 'redux/modules/widget';
 // import * as multiselectRelationSearchActions from 'redux/modules/multiselectRelations/multiselectRelation-search';
 import access from 'safe-access';
 
+const DATA_KEY = 'WidgetEditor';
 
 // const multiselectRelationSearchResultsSelector = (state) => {
 //     if (access(state, 'data.multiselectRelation') && access(state, 'multiselectRelationSearch.multiselectRelationSearchRefs')) {
@@ -28,57 +31,56 @@ import access from 'safe-access';
         const promises = [];
 
         const state = getState();
+        if (!isAuthLoaded(state)) {
+            promises.push(dispatch(loadAuth()));
+        }
         const widgetID = params.widgetID;
         if (widgetID) {
-            const widgetRef = widgetLoadSuite.selector(state);
-            const loadedWidgetID = access(widgetRef, 'resources[0].id');
-            if (loadedWidgetID && params.widgetID && (loadedWidgetID.toString() !== params.widgetID.toString())) {
-                promises.push(dispatch(widgetLoadSuite.clearAction()));
-                promises.push(dispatch(widgetEditSuite.clearAction()));
-            }
-            promises.push(dispatch(widgetLoadSuite.requestAction(params.widgetID)));
-        } else {
-            promises.push(dispatch(widgetLoadSuite.clearAction()));
-            promises.push(dispatch(widgetCreateSuite.clearAction()));
+            promises.push(dispatch(widgetLoadAction(DATA_KEY)(widgetID)));
         }
 
         return Promise.all(promises);
     }
 }])
 @connect(
-    (state) => {
-        const editWidgetRef = widgetLoadSuite.selector(state);
-        const createWidgetRef = widgetCreateSuite.selector(state);
+    (state, ownProps) => {
+        const createMode = typeof access(ownProps, 'params.widgetID') === 'undefined';
+        const requestState = selectRequest(DATA_KEY)(state);
         return {
-            widget: editWidgetRef.resources ? editWidgetRef.resources[0] : null,
-            createdWidget: createWidgetRef.resources ? createWidgetRef.resources[0] : null,
-            // multiselectRelationSearchResults: multiselectRelationSearchResultsSelector(state),
+            createMode,
+            widget: createMode ? null : selectData(DATA_KEY)(state),
+            requestState
         };
     },
     {
-        createWidget: widgetCreateSuite.requestAction,
-        saveWidget: widgetEditSuite.requestAction,
-        deleteWidget: widgetDeleteSuite.requestAction,
-        pushState: push,
+        createWidget: widgetCreateAction(DATA_KEY),
+        saveWidget: widgetEditAction(DATA_KEY),
+        deleteWidget: widgetDeleteAction(DATA_KEY),
+        pushState: push
     }
 )
 export default class WidgetEditor extends Component {
     static propTypes = {
+        params: React.PropTypes.shape({
+            widgetID: PropTypes.string
+        }),
+        createMode: PropTypes.bool.isRequired,
         widget: PropTypes.object,
+        requestState: PropTypes.object,
         createWidget: PropTypes.func.isRequired,
         saveWidget: PropTypes.func.isRequired,
         deleteWidget: PropTypes.func.isRequired,
-        createdWidget: PropTypes.object,
         pushState: PropTypes.func.isRequired,
 
         // multiselectRelationSearchResults: PropTypes.array,
         // search: PropTypes.func.isRequired,
     }
 
-    componentWillReceiveProps(nextProps) {
-        if (!this.props.createdWidget && nextProps.createdWidget) {
-            this.props.pushState(`/widgets/${nextProps.createdWidget.id}`);
-        }
+    constructor(props) {
+        super(props);
+        this.state = {
+            isDeleting: false
+        };
     }
 
     handleSubmit = (event) => {
@@ -90,18 +92,24 @@ export default class WidgetEditor extends Component {
         //     type: multiselectRelation.type,
         //     id: multiselectRelation.id
         // }));
-        if (this.props.widget) {
+        if (this.props.createMode) {
+            this.props.createWidget(name, descriptionHTML, /* selectedMultiselectRelationsAsRefs */)
+                .then((response) => {
+                    const createdWidget = access(response, 'payload.newRequestRef.entities[0]');
+                    const destination = createdWidget ? `/widgets/${createdWidget.id}` : '/widgets';
+                    this.props.pushState(destination);
+                });
+        } else {
             this.props.saveWidget(this.props.widget.id, name, descriptionHTML, /* selectedMultiselectRelationsAsRefs */)
                 .then(() => {
                     this.props.pushState(`/widgets/${this.props.widget.id}`);
                 });
-        } else {
-            this.props.createWidget(name, descriptionHTML, /* selectedMultiselectRelationsAsRefs */);
         }
     }
 
     handleDelete = (event) => {
         event.preventDefault();
+        this.setState({isDeleting: true});
         if (confirm('Delete the item?')) {
             this.props.deleteWidget(this.props.widget.id)
                 .then(() => {
@@ -111,17 +119,18 @@ export default class WidgetEditor extends Component {
     }
 
     render() {
+        const isLoading = access(this.props, 'requestState.isLoading');
         return (
             <div className="container">
-                {this.props.widget ? (
-                    <div>
-                        <h1>Edit Widget</h1>
-                        <Helmet title="Edit Widget"/>
-                    </div>
-                ) : (
+                {this.props.createMode ? (
                     <div>
                         <h1>Create New Widget</h1>
                         <Helmet title="Create New Widget"/>
+                    </div>
+                ) : (
+                    <div>
+                        <h1>Edit Widget</h1>
+                        <Helmet title="Edit Widget"/>
                     </div>
                 )}
 
@@ -141,15 +150,15 @@ export default class WidgetEditor extends Component {
                                 searchRsesults={this.props.multiselectRelationSearchResults}
                                 selectedItems={access(this.props.widget, 'multiselectRelations')} />
                         </div> */}
-                        <button className="btn btn-success" onClick={this.handleSubmit}>
-                            Save
+                        <button className="btn btn-success" onClick={!isLoading ? this.handleSubmit : null}>
+                            {isLoading && !this.state.isDeleting ? 'Saving...' : 'Save'}
                         </button>
                     </form>
                 </div>
                 {this.props.widget ? (
                     <div style={{paddingTop: '1em'}}>
-                        <button className="btn btn-danger" onClick={this.handleDelete}>
-                            Delete
+                        <button className="btn btn-danger" onClick={!isLoading ? this.handleDelete : null}>
+                            {isLoading && this.state.isDeleting ? 'Deleting...' : 'Delete'}
                         </button>
                     </div>
                 ) : null}
