@@ -6,8 +6,10 @@ import { Link } from 'react-router';
 import values from 'lodash.values';
 import access from 'safe-access';
 import { isLoaded as isAuthLoaded, load as loadAuth } from 'redux/modules/auth';
-import {widgetListSuite} from 'redux/modules/widget';
+import { widgetListAction } from 'redux/modules/widget';
+import { selectData, selectRequest } from 'libs/nion';
 
+const DATA_KEY = 'WidgetsList';
 
 @asyncConnect([{
     promise: ({store: {dispatch, getState}}) => {
@@ -17,16 +19,20 @@ import {widgetListSuite} from 'redux/modules/widget';
         if (!isAuthLoaded(state)) {
             promises.push(dispatch(loadAuth()));
         }
-        promises.push(dispatch(widgetListSuite.requestAction()));
+        promises.push(dispatch(widgetListAction(DATA_KEY)()));
         return Promise.all(promises);
     }
 }])
 @connect(
-    (state) => ({
-        currentUser: state.auth.user,
-        widgets: access(state, 'data.widget') ? values(state.data.widget) : [],
-        widgetsLoaded: !widgetListSuite.selector(state).requests.pending
-    }),
+    (state) => {
+        const rawWidgets = access(state, 'nion.entities') ? values(state.nion.entities.widget) : [];
+        const normalizedWidgets = rawWidgets.map((rawWidget) => (selectData(rawWidget)(state)));
+        return {
+            currentUser: state.auth.user,
+            widgets: normalizedWidgets,
+            widgetsLoaded: access(selectRequest(DATA_KEY)(state), 'status') !== 'pending'
+        };
+    },
     {}
 )
 export default class WidgetsList extends Component {

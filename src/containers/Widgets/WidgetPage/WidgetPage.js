@@ -6,7 +6,10 @@ import { asyncConnect } from 'redux-async-connect';
 import Helmet from 'react-helmet';
 import { isLoaded as isAuthLoaded, load as loadAuth } from 'redux/modules/auth';
 import access from 'safe-access';
-import {widgetLoadSuite} from 'redux/modules/widget';
+import { selectData, selectRequest } from 'libs/nion';
+import { widgetLoadAction } from 'redux/modules/widget';
+
+const DATA_KEY = 'WidgetPage';
 
 @asyncConnect([{
     promise: ({store: {dispatch, getState}, params}) => {
@@ -16,25 +19,21 @@ import {widgetLoadSuite} from 'redux/modules/widget';
         if (!isAuthLoaded(state)) {
             promises.push(dispatch(loadAuth()));
         }
-        const widgetRef = widgetLoadSuite.selector(state);
-        const loadedWidgetID = access(widgetRef, 'resources[0].id');
-        if (loadedWidgetID && params.widgetID && (loadedWidgetID.toString() !== params.widgetID.toString())) {
-            promises.push(dispatch(widgetLoadSuite.clearAction()));
-        }
         if (params.widgetID) {
-            promises.push(dispatch(widgetLoadSuite.requestAction(params.widgetID)));
+            promises.push(dispatch(widgetLoadAction(DATA_KEY)(params.widgetID)));
         }
 
         return Promise.all(promises);
     }
 }])
 @connect(
-    (state, ownProps) => {
-        const widgetRef = widgetLoadSuite.selector(state);
+    (state) => {
+        const widget = selectData(DATA_KEY)(state);
+        const widgetRequest = selectRequest(DATA_KEY)(state);
         return {
             currentUser: state.auth.user,
-            widget: widgetRef.resources ? widgetRef.resources[0] : null,
-            widgetLoaded: !access(widgetRef.requests, `${ownProps.params.widgetID}.pending`)
+            widget: widget,
+            widgetLoaded: widgetRequest.status !== 'pending',
         };
     }
 )

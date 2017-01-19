@@ -3,7 +3,7 @@ import url from 'fast-url-parser';
 import queryStringParser from 'querystringparser';
 url.queryString = queryStringParser;
 
-export const buildUrl = urlBuilderForDefaults({ include: [] });
+export const buildUrl = urlBuilderForDefaults({});
 
 export const deconstructUrl = (input) => {
     const unescaped = unescape(input);
