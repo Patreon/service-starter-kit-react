@@ -32,7 +32,7 @@ WIP! Copy these changes, but customize to your service: https://github.com/Patre
 ### Heroku
 
 1. Create heroku app, add heroku remote, etc.
-1. Add Postgres and Redis
+1. Add Postgres and Redis services to your Heroku app
 1. Set the following heroku config vars
     1. PG_USER: (user from heroku pg settings)
     1. PG_PASS: (password from heroku pg settings)
